@@ -22,24 +22,29 @@ This skill provides instructions for exporting WeChat chat history using WeFlow'
 
 ### Script Location
 
+The PowerShell script is located at:
 ```
-scripts/weflow-export.ps1
+{SKILL_DIR}/scripts/weflow-export.ps1
 ```
+
+> **Important**: Replace `{SKILL_DIR}` with the absolute path to this skill's directory. 
+> 
+> For AI Agents: The skill directory is the directory containing this SKILL.md file.
 
 ### Basic Usage
 
 ```powershell
 # Check API health
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Action health
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Action health
 
 # Search sessions
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Action sessions -Keyword "群名"
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Action sessions -Keyword "群名"
 
-# Export chat history
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Keyword "群名" -Limit 50 -ChatLab
+# Export chat history (auto-creates timestamped output directory)
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Keyword "群名" -Limit 50 -ChatLab
 
-# Export to specific directory
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Keyword "群名" -Limit 100 -ChatLab -OutputDir "D:\exports"
+# Export to specific base directory (will create subdirectory with timestamp)
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Keyword "群名" -Limit 100 -ChatLab -OutputDir "D:\exports"
 ```
 
 ---
@@ -56,14 +61,16 @@ powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Keyword "群
 | `-StartDate` | string | - | Start date (YYYYMMDD) |
 | `-EndDate` | string | - | End date (YYYYMMDD) |
 | `-MessageKeyword` | string | - | Keyword filter for messages |
-| `-OutputDir` | string | . | Output directory |
-| `-OutputFile` | string | auto | Output filename |
+| `-OutputDir` | string | . | Base output directory (subdirectory with timestamp will be created) |
+| `-OutputFile` | string | auto | Output filename (default: chat_export.json) |
 | `-ChatLab` | switch | - | Export in ChatLab format |
 | `-Media` | switch | - | Export media files |
 | `-Image` | switch | - | Export images (requires -Media) |
 | `-Voice` | switch | - | Export voice (requires -Media) |
 | `-Video` | switch | - | Export video (requires -Media) |
 | `-Emoji` | switch | - | Export emoji (requires -Media) |
+
+> **Output Directory Behavior**: When exporting, the script automatically creates a unique subdirectory named `weflow_export_YYYYMMDD_HHmmss` under the specified `-OutputDir`. This ensures each export is isolated in its own folder.
 
 ---
 
@@ -72,46 +79,48 @@ powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Keyword "群
 ### 1. Check API Health
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Action health
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Action health
 ```
 
 ### 2. Search Sessions
 
 ```powershell
 # Search by keyword
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Action sessions -Keyword "工作群"
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Action sessions -Keyword "工作群"
 
 # List all sessions
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Action sessions -Limit 50
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Action sessions -Limit 50
 ```
 
 ### 3. Export Chat History
 
+> **Note**: Each export creates a unique output directory with timestamp (format: `weflow_export_YYYYMMDD_HHmmss`).
+
 ```powershell
 # Export by keyword search
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Keyword "xxx交流群" -Limit 50 -ChatLab
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Keyword "xxx交流群" -Limit 50 -ChatLab
 
 # Export by talker ID
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Talker "wxid_xxx" -Limit 100 -ChatLab
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Talker "wxid_xxx" -Limit 100 -ChatLab
 
 # Export with date range
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Talker "wxid_xxx" -StartDate 20260101 -EndDate 20260205 -Limit 1000 -ChatLab
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Talker "wxid_xxx" -StartDate 20260101 -EndDate 20260205 -Limit 1000 -ChatLab
 
 # Export with media files
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Talker "wxid_xxx" -Limit 100 -ChatLab -Media -Image -Voice
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Talker "wxid_xxx" -Limit 100 -ChatLab -Media -Image -Voice
 
 # Filter messages by keyword
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Talker "wxid_xxx" -MessageKeyword "项目" -Limit 50 -ChatLab
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Talker "wxid_xxx" -MessageKeyword "项目" -Limit 50 -ChatLab
 ```
 
 ### 4. Export Contacts
 
 ```powershell
 # List all contacts
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Action contacts -Limit 100
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Action contacts -Limit 100
 
 # Search contacts
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Action contacts -Keyword "张三"
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Action contacts -Keyword "张三"
 ```
 
 ---
@@ -191,31 +200,45 @@ When using `-Media` flag, media files are exported to this directory and paths a
 
 ## Workflow for AI Agents
 
-### Step 1: Check API Status
+### Step 1: Determine Skill Directory
+
+The skill directory is the absolute path containing this SKILL.md file. Use this path to construct the script path:
+```
+{SKILL_DIR}/scripts/weflow-export.ps1
+```
+
+### Step 2: Check API Status
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Action health
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Action health
 ```
 
 Expected output: `API is healthy`
 
-### Step 2: Find Target Session
+### Step 3: Find Target Session
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Action sessions -Keyword "目标群名"
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Action sessions -Keyword "目标群名"
 ```
 
 Extract `username` from response as the talker ID.
 
-### Step 3: Export Messages
+### Step 4: Export Messages
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/weflow-export.ps1 -Talker "{username}" -Limit 100 -ChatLab -OutputDir "{output_path}"
+powershell -ExecutionPolicy Bypass -File "{SKILL_DIR}/scripts/weflow-export.ps1" -Talker "{username}" -Limit 100 -ChatLab
 ```
 
-### Step 4: Verify Output
+> **Output**: A unique directory will be created automatically (e.g., `weflow_export_20260306_143052/`) containing the exported JSON file.
 
-Check the output file path printed in the console.
+### Step 5: Verify Output
+
+Check the output file path printed in the console. The output structure will be:
+```
+{OutputDir}/weflow_export_YYYYMMDD_HHmmss/
+├── chat_export.json
+└── (media files if -Media was used)
+```
 
 ---
 

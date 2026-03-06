@@ -5,6 +5,7 @@
 .DESCRIPTION
     This script exports WeChat chat history using WeFlow's HTTP API.
     It can search for sessions by keyword and export messages in ChatLab format.
+    Each export creates a unique timestamped directory for output files.
 
 .PARAMETER Action
     Action to perform: health, sessions, contacts, export (default: export)
@@ -31,10 +32,10 @@
     Keyword filter for messages
 
 .PARAMETER OutputDir
-    Output directory for exported files (default: current directory)
+    Base output directory - a timestamped subdirectory will be created (default: current directory)
 
 .PARAMETER OutputFile
-    Output filename (default: auto-generated with timestamp)
+    Output filename (default: chat_export.json)
 
 .PARAMETER ChatLab
     Export in ChatLab format
@@ -64,15 +65,15 @@
 
 .EXAMPLE
     .\weflow-export.ps1 -Keyword "岛城股市交流群" -Limit 50 -ChatLab
-    Export 50 messages from session matching keyword in ChatLab format
+    Export 50 messages - creates weflow_export_YYYYMMDD_HHmmss/chat_export.json
 
 .EXAMPLE
     .\weflow-export.ps1 -Talker "wxid_xxx" -Limit 100 -ChatLab -Media -Image -Voice
     Export messages with images and voice files
 
 .EXAMPLE
-    .\weflow-export.ps1 -Talker "wxid_xxx" -StartDate 20260101 -EndDate 20260205 -Limit 1000
-    Export messages within date range
+    .\weflow-export.ps1 -Talker "wxid_xxx" -StartDate 20260101 -EndDate 20260205 -Limit 1000 -OutputDir "D:\exports"
+    Export messages within date range to D:\exports\weflow_export_YYYYMMDD_HHmmss\
 #>
 
 param(
@@ -98,6 +99,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 $BaseUrl = "http://127.0.0.1:5031"
+
+function New-ExportDirectory {
+    param([string]$BaseDir)
+    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $exportDirName = "weflow_export_$timestamp"
+    $fullPath = Join-Path $BaseDir $exportDirName
+    if (-not (Test-Path $fullPath)) {
+        New-Item -ItemType Directory -Path $fullPath -Force | Out-Null
+    }
+    return $fullPath
+}
 
 function Write-JsonOutput {
     param($Data, $FilePath)
@@ -161,14 +173,12 @@ switch ($Action) {
     }
     
     "export" {
-        # Check API health first
         $health = Invoke-ApiRequest "$BaseUrl/health"
         if ($health.status -ne "ok") {
             Write-Error "API health check failed"
             exit 1
         }
         
-        # Find session if Talker not provided
         if (-not $Talker -and $Keyword) {
             $encodedKeyword = [uri]::EscapeDataString($Keyword)
             $searchUri = "$BaseUrl/api/v1/sessions?keyword=$encodedKeyword&limit=10"
@@ -187,7 +197,6 @@ switch ($Action) {
             exit 1
         }
         
-        # Build export URL
         $encodedTalker = [uri]::EscapeDataString($Talker)
         $uri = "$BaseUrl/api/v1/messages?talker=$encodedTalker&limit=$Limit&offset=$Offset"
         
@@ -204,22 +213,16 @@ switch ($Action) {
             $uri += "&keyword=$encodedMsgKeyword"
         }
         
-        # Export messages
         $result = Invoke-ApiRequest $uri
         
-        # Generate output filename if not provided
+        $exportDir = New-ExportDirectory $OutputDir
+        Write-Host "Export directory: $exportDir"
+        
         if (-not $OutputFile) {
-            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-            $OutputFile = Join-Path $OutputDir "chat_export_$timestamp.json"
-        } elseif (-not [System.IO.Path]::IsPathRooted($OutputFile)) {
-            $OutputFile = Join-Path $OutputDir $OutputFile
+            $OutputFile = "chat_export.json"
         }
         
-        # Ensure output directory exists
-        $outputDirPath = Split-Path $OutputFile -Parent
-        if ($outputDirPath -and -not (Test-Path $outputDirPath)) {
-            New-Item -ItemType Directory -Path $outputDirPath -Force | Out-Null
-        }
+        $OutputFile = Join-Path $exportDir $OutputFile
         
         Write-JsonOutput $result $OutputFile
         
